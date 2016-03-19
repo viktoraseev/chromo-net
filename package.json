@@ -1,0 +1,30 @@
+{
+  "name": "chromo-net",
+  "version": "1.0.0",
+  "description": "crosstab library",
+  "author": "Viktor Aseev <viktor.aseev@gmail.com>",
+  "license": "MIT",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/viktoraseev/chromo-net.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "gulp": "3.8.11",
+    "gulp-concat-util": "0.5.5",
+    "gulp-jscs": "3.0.2",
+    "gulp-plumber": "1.0.0",
+    "gulp-rename": "1.2.2",
+    "gulp-uglify": "1.2.0",
+    "gulp-webserver": "0.9.1"
+  },
+  "scripts": {
+    "dev": "node_modules\\.bin\\gulp",
+    "deploy": "node_modules\\.bin\\gulp build",
+    "test": "node_modules\\.bin\\gulp test"
+  },
+  "readmeFilename": "README.md"
+}
