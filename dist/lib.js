@@ -1,7 +1,7 @@
 (function(win, con, storage) {/* globals win, con, storage */
 function stub() {
 }
-// http://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid-in-javascript generateQuickGuid() function
+
 function generateUuid() {
   return Math.random().toString(36).substring(2, 15) +
     Math.random().toString(36).substring(2, 15);
@@ -14,25 +14,88 @@ function trace(msg) {
   }
 }
 
+/* globals win, con, storage */
+var browser = getCapabilities();
+
+function getCapabilities() {
+  var ua = navigator.userAgent;
+  var ie = ua.match(/MSIE\s([\d.]+)/) || ua.match(/Trident\/[\d](?=[^\?]+).*rv:([0-9.].)/);
+  var edge = ua.match('Edge/([0-9]{1,}[\.0-9]{0,})');
+  return {
+    // on edge, storage event doesnt work normally
+    storageEvent: !edge,
+    // IE doesn't fire storage event at subframes from window.open()
+    topStorage: !!((ie && ie[1] == '11')),
+    // ie doesnt support binary blobs
+    blob: !(ie),
+    // max msg size
+    msgSize: 4000
+  };
+}
+
+
+/* globals win, con, storage */
+
+function TcpChannel() {
+}
 
 // Simulates fire&forget messaging between tabs
-// function send(target, data)
-// function broadcast(data)
+// function send(data, target)
+/* globals win, con, storage */
+// http://hansifer.com/main.html - test page
+function UdpChannel(channel, _id, onMessage) {
+  if (!_id) {
+    throw new Error('id is not specified');
+  }
+  if (!channel) {
+    throw new Error('channel is not specified');
+  }
+  if (!onMessage) {
+    throw new Error('onMessage is not specified');
+  }
 
-function UdpChannel(channel, onMessage) {
-  this.send = function(target, data) {
-    if (!target || target.lastIndexOf(prefix, 0) !== 0) {
+  var id = channel + '-' + _id;
+  var counter = 0;
+  var received = {};
+
+  // event will not fire if value is already set to same
+  this.send = function(data, target) {
+    if (target && target.lastIndexOf(channel, 0) !== 0) {
       throw new Error('Message send to wrong channel');
     }
-    storage.setItem(data);
+    var dataStr = JSON.stringify({c: counter++, d: data, t: target});
+
+    storage[id] = dataStr;
   };
-  this.broadcast = function(data) {
-    storage.setItem(data);
-  };
-  function onStorage(event) {
+
+  function udpOnStorage(event) {
+    var key = event.key;
+    if (key === id) {
+      return; // IE will sent events to yourself
+    }
+    // IE fire storage event twice if send to IFrame
+    try {
+      var valueStr = event.newValue;
+      var value = JSON.parse(valueStr);
+    } catch (e) {
+      con.error(e);
+      return;
+    }
+
+    if (value && (!value.t || (value.t && value.t === id))) {
+      if (received[key] !== value.c) {
+        received[key] = value.c;
+        onMessage(value.d, key);
+      }
+    }
   }
-  win.addEventListener('storage', onStorage, false);
-  trace('UdpChannel created');
+  // IE doesn't fire storage event at subframes from window.open()
+  if (browser.topStorage) {
+    win.top.addEventListener('storage', udpOnStorage, false);
+  } else {
+    win.addEventListener('storage', udpOnStorage, false);
+  }
+  trace('UdpChannel created ');
 }
-new UdpChannel();
+win.ChromonetUdpChannel = UdpChannel;
 })(window, console, localStorage);

@@ -6,9 +6,11 @@ var jscs = require('gulp-jscs');
 var uglify = require('gulp-uglify');
 var webserver = require('gulp-webserver');
 
-gulp.task('scripts', function() {
-  gulp.src('assets/**/*')
+gulp.task('assets', function() {
+  return gulp.src('assets/**/*')
     .pipe(gulp.dest('app/'));
+});
+gulp.task('scripts', function() {
   return gulp.src(['js/utils.js', 'js/**/*.js'])
     .pipe(plumber({
       errorHandler: function(error) {
@@ -23,18 +25,21 @@ gulp.task('scripts', function() {
     .pipe(gulp.dest('dist/'))
     .pipe(rename({suffix: '.min'}))
     .pipe(uglify())
+    .pipe(gulp.dest('app/'))
     .pipe(gulp.dest('dist/'));
 });
 
-gulp.task('webserver', function() {
+gulp.task('webserver', ['scripts', 'assets'], function() {
   gulp.src('app')
     .pipe(webserver({
       directoryListing: false,
       open: true,
-      fallback: 'app/index.html'
+      fallback: 'app/index.html',
+      host: '0.0.0.0'
     }));
 });
 
-gulp.task('default', ['scripts', 'webserver'], function() {
+gulp.task('default', ['webserver'], function() {
   gulp.watch('js/**/*.js', ['scripts']);
+  gulp.watch('assets/**/*', ['assets']);
 });
