@@ -1,5 +1,5 @@
 function ChromonetChannelCleaner(channel) {
-  setInterval(function() {
+  function cleanup() {
     var keys = Object.keys(storage);
     var l = keys.length;
     for (var i = 0; i < l; i++) {
@@ -8,6 +8,11 @@ function ChromonetChannelCleaner(channel) {
         storage.removeItem(key);
       }
     }
-  }, 5000);
+  }
+  var timerId = setInterval(cleanup, 5000);
+  this.shutdown = function() {
+    cleanup();
+    clearInterval(timerId);
+  };
 }
 win.ChromonetChannelCleaner = ChromonetChannelCleaner;

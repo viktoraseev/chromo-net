@@ -33,6 +33,15 @@ function UdpChannel(channel, _id, _onMessage) {
     storage.setItem(id, dataStr);
   };
 
+  self.shutdown = function() {
+    cleaner.shutdown();
+    if (browser.topStorage) {
+      win.top.removeEventListener('storage', udpOnStorage, false);
+    } else {
+      win.removeEventListener('storage', udpOnStorage, false);
+    }
+  };
+
   function udpOnStorage(event) {
     var key = event.key;
     if (key === id) {
