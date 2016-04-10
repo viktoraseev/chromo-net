@@ -1,0 +1,33 @@
+<html>
+<title>network sample</title>
+<head>
+  <script src="lib.js"></script>
+  <script src="test.js"></script>
+</head>
+<body>
+  <button onclick="connect()">Connect</button>
+  <button onclick="disconnect()">Disconnect</button>
+
+  <script>
+    networkTest();
+    net.connect();
+    log(net.id());
+    if (parent === window) {
+      showWin(20, 10);
+      showWin(20, 50);
+      showWin(60, 10);
+      showWin(60, 50);
+    }
+
+    function showWin(top, left) {
+      var e = document.createElement('iframe');
+      e.setAttribute('src', 'net.html');
+      e.setAttribute('style',
+        'position: absolute;width: 40%;' +
+        'top: ' + top + '%;' +
+        'left: ' + left + '%;');
+      document.body.appendChild(e);
+    }
+  </script>
+</body>
+</html>
