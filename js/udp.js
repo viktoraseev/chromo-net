@@ -12,6 +12,7 @@ function UdpChannel(channel, _id, _onMessage) {
     throw new Error('channel is not specified');
   }
 
+  var idCutoff = channel.length + 1;
   var id = channel + '-' + _id;
   var counter = 0;
   var received = {};
@@ -25,12 +26,11 @@ function UdpChannel(channel, _id, _onMessage) {
   };
   // event will not fire if value is already set to same
   self.send = function(data, target) {
-    if (target && target.lastIndexOf(channel, 0) !== 0) {
-      throw new Error('Message send to wrong channel');
+    var obj = {c: counter++, d: data};
+    if (target) {
+      obj.t = channel + '-' + target;
     }
-    var dataStr = JSON.stringify({c: counter++, d: data, t: target});
-
-    storage.setItem(id, dataStr);
+    storage.setItem(id, JSON.stringify(obj));
   };
 
   self.shutdown = function() {
@@ -63,9 +63,11 @@ function UdpChannel(channel, _id, _onMessage) {
 
     // IE fire storage event twice if send to IFrame
     if (value && (!value.t || (value.t && value.t === id))) {
-      if (received[key] !== value.c) {
-        received[key] = value.c;
-        onMessage(value.d, key);
+      if (key.lastIndexOf(channel, 0) === 0) {
+        if (received[key] !== value.c) {
+          received[key] = value.c;
+          onMessage(value.d, key.substring(idCutoff));
+        }
       }
     }
   }
