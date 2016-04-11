@@ -1,9 +1,9 @@
 function ChromonetPing(channelObj, targetId, onError) {
   var PING = 'ping';
-  var PERIOD = 1000;
+  var PERIOD = 700;
   var lastReply = Date.now();
   function ping() {
-    if (lastReply && (Date.now() - lastReply > PERIOD * 2)) {
+    if (lastReply && (Date.now() - lastReply > PERIOD * 3)) {
       onError();
       return;
     }

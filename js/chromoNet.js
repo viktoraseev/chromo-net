@@ -4,11 +4,14 @@ function Chromonet(channel) {
   var serviceChannel;
   var state;
   var id;
+  var freezeMode;
+
   // messages
   var MSG_ASK_NET_INFO = 'reportPlz';
   var MSG_RPL_NET_REPORT = 'reportHere';
   var MSG_PING = 'ping';
   var MSG_PONG = 'pong';
+  var MSG_FREEZE = 'freeze';
   // timings
   var CONNECTING_TIMEOUT = 550; // host may be busy processing JS code
   var PING_TIMEOUT = 550; // host may be busy processing JS code
@@ -38,6 +41,18 @@ function Chromonet(channel) {
 
   self.id = function() {
     return id;
+  };
+  // changeState only if
+  self.freeze = function(mode) {
+    if (typeof mode !== 'undefined') {
+      freezeMode = !!mode;
+      console.log('Changed freezeMode to: ' + freezeMode + ', for ' + id);
+      serviceChannel.send({t: MSG_FREEZE, mode: freezeMode});
+    }
+    return freezeMode;
+  };
+  self.serviceChannel = function() {
+    return serviceChannel;
   };
 
   function changeState(newState) {
@@ -92,7 +107,7 @@ function Chromonet(channel) {
     self.name = function() { return 'Disconnected'; };
     self.leave = stub;
     self.send = function(data, target) {
-      throw new Error('Could not send data while Connecting');
+      throw new Error('Could not send data while Disconnected');
     };
   }
 
@@ -109,7 +124,7 @@ function Chromonet(channel) {
       } else if (data.t === MSG_RPL_NET_REPORT) {
         netInfo.push({id: sender, host: data.host});
         if (data.host) {
-          done();
+          //done(); that makes situation much worse and unstable.
         }
       } else if (data.t == MSG_PING) {
         serviceChannel.send({t: MSG_PONG}, sender);
@@ -147,13 +162,14 @@ function Chromonet(channel) {
       connectingDone = true;
       if (netInfo.length > 0) {
         netInfo.push({id: id});
-        netInfo.sort(function(a, b) {
-          return a.id > b.id;
-        });
-        if (netInfo[0].id === id) {
+        var sorted = netInfo.map(function(e) {
+          return e.id;
+        }).sort();
+
+        if (sorted[0] === id) {
           changeState(new HostState());
         } else {
-          changeState(new ClientState(netInfo[0].id));
+          changeState(new ClientState(sorted[0]));
         }
       } else {
         changeState(new HostState());
@@ -168,7 +184,9 @@ function Chromonet(channel) {
     var c;
 
     function pingFailed() {
-      changeState(new ConnectingState(true));
+      if (!freezeMode) {
+        changeState(new ConnectingState(true));
+      }
     }
 
     self.onMessage = function(data, sender, time) {
@@ -182,6 +200,9 @@ function Chromonet(channel) {
         pingService.pong();
       } else if (data.t === MSG_RPL_NET_REPORT) {
         // may come later
+      } else if (data.t === MSG_FREEZE) {
+        freezeMode = data.mode;
+        console.log('Changed freezeMode to: ' + freezeMode + ', for ' + id);
       } else {
         throw new Error('unknown message at ClientState ' + data.t);
       }
@@ -217,6 +238,9 @@ function Chromonet(channel) {
         // late pong's
       } else if (data.t === MSG_RPL_NET_REPORT) {
         // may come later
+      } else if (data.t === MSG_FREEZE) {
+        freezeMode = data.mode;
+        console.log('Changed freezeMode to: ' + freezeMode + ', for ' + id);
       } else {
         throw new Error('unknown message at HostState ' + data.t);
       }

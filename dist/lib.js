@@ -105,6 +105,9 @@ function Chromonet(channel) {
     }
     return freezeMode;
   };
+  self.serviceChannel = function() {
+    return serviceChannel;
+  };
 
   function changeState(newState) {
     if (!newState) {
@@ -175,7 +178,7 @@ function Chromonet(channel) {
       } else if (data.t === MSG_RPL_NET_REPORT) {
         netInfo.push({id: sender, host: data.host});
         if (data.host) {
-          done();
+          //done(); that makes situation much worse and unstable.
         }
       } else if (data.t == MSG_PING) {
         serviceChannel.send({t: MSG_PONG}, sender);
@@ -213,13 +216,14 @@ function Chromonet(channel) {
       connectingDone = true;
       if (netInfo.length > 0) {
         netInfo.push({id: id});
-        netInfo.sort(function(a, b) {
-          return a.id > b.id;
-        });
-        if (netInfo[0].id === id) {
+        var sorted = netInfo.map(function(e) {
+          return e.id;
+        }).sort();
+
+        if (sorted[0] === id) {
           changeState(new HostState());
         } else {
-          changeState(new ClientState(netInfo[0].id));
+          changeState(new ClientState(sorted[0]));
         }
       } else {
         changeState(new HostState());
@@ -318,10 +322,10 @@ function ChromonetDiscoveryService() {
 
 function ChromonetPing(channelObj, targetId, onError) {
   var PING = 'ping';
-  var PERIOD = 1000;
+  var PERIOD = 700;
   var lastReply = Date.now();
   function ping() {
-    if (lastReply && (Date.now() - lastReply > PERIOD * 2)) {
+    if (lastReply && (Date.now() - lastReply > PERIOD * 3)) {
       onError();
       return;
     }
