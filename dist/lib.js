@@ -317,9 +317,6 @@ function Chromonet(channel) {
 
 win.Chromonet = Chromonet;
 
-function ChromonetDiscoveryService() {
-}
-
 function ChromonetPing(channelObj, targetId, onError) {
   var PING = 'ping';
   var PERIOD = 700;
@@ -401,6 +398,11 @@ function UdpChannel(channel, _id, _onMessage) {
       return; // IE will sent events to yourself
     }
 
+    // filter other events early
+    if (key.lastIndexOf(channel + '-', 0) !== 0) {
+      return;
+    }
+
     var value;
     try {
       var valueStr = event.newValue;
@@ -416,11 +418,9 @@ function UdpChannel(channel, _id, _onMessage) {
 
     // IE fire storage event twice if send to IFrame
     if (value && (!value.t || (value.t && value.t === id))) {
-      if (key.lastIndexOf(channel, 0) === 0) {
-        if (received[key] !== value.c) {
-          received[key] = value.c;
-          onMessage(value.d, key.substring(idCutoff));
-        }
+      if (received[key] !== value.c) {
+        received[key] = value.c;
+        onMessage(value.d, key.substring(idCutoff));
       }
     }
   }
